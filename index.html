@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <title>InfraMap — Charleston, SC Projects</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <!-- Leaflet -->
   <link
     rel="stylesheet"
@@ -11,28 +12,23 @@
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""
   />
-  <style>
-    html, body { height: 100%; margin: 0; font-family: system-ui, sans-serif; }
-    #app { display: grid; grid-template-columns: 320px 1fr; height: 100%; }
-    #sidebar { padding: 12px; border-right: 1px solid #e5e7eb; overflow:auto }
-    #map { height: 100%; }
-    .project-card { padding:10px; border:1px solid #eee; border-radius:12px; margin:8px 0 }
-    .tag { display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid #ddd; font-size:12px; margin-right:6px }
-    .legend { font-size:12px; color:#555; margin:8px 0 }
-    .controls label { display:block; margin:4px 0 }
-    .search { width:100%; padding:8px; border:1px solid #ddd; border-radius:8px; }
-  </style>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 <div id="app">
   <aside id="sidebar">
     <h2>InfraMap — Charleston, SC</h2>
+
     <input id="q" class="search" placeholder="Search name/city…" />
+
     <div class="controls">
       <h4>Status</h4>
       <label><input type="checkbox" name="status" value="planned" checked> Planned</label>
       <label><input type="checkbox" name="status" value="active" checked> Active</label>
       <label><input type="checkbox" name="status" value="completed" checked> Completed</label>
+
       <h4>Category</h4>
       <label><input type="checkbox" name="category" value="transit" checked> Transit</label>
       <label><input type="checkbox" name="category" value="road" checked> Road</label>
@@ -40,9 +36,11 @@
       <label><input type="checkbox" name="category" value="building" checked> Building</label>
       <label><input type="checkbox" name="category" value="resilience" checked> Resilience</label>
     </div>
+
     <div class="legend">Click markers for details. Filters update both the list and the map.</div>
     <div id="list"></div>
   </aside>
+
   <div id="map"></div>
 </div>
 
@@ -53,201 +51,7 @@
   crossorigin=""
 ></script>
 
-<script>
-// --- Charleston demo data (replace with real sources when you have them) ---
-const DATA = {
-  projects: [
-    {
-      id: "CHS-001",
-      name: "Low Battery Seawall — Phase 4",
-      category: "resilience",
-      status: "active",
-      city: "Charleston, SC",
-      lat: 32.7749, lng: -79.9496,
-      budget_usd: 100000000,
-      start_date: "2024-03-01", end_date: "2027-12-31",
-      links: ["https://placeholder/low-battery-phase4"],
-      description: "Seawall elevation, storm surge protection along Murray Blvd."
-    },
-    {
-      id: "CHS-002",
-      name: "I-526 Lowcountry Corridor (West) — Improvements",
-      category: "road",
-      status: "planned",
-      city: "Charleston/North Charleston, SC",
-      lat: 32.8670, lng: -80.0200,
-      budget_usd: 0,
-      start_date: "",
-      end_date: "",
-      links: ["https://placeholder/i526-corridor-west"],
-      description: "Capacity, interchange, and safety upgrades along I‑526 West."
-    },
-    {
-      id: "CHS-003",
-      name: "Union Pier Redevelopment — Public Realm Infrastructure",
-      category: "building",
-      status: "planned",
-      city: "Charleston, SC",
-      lat: 32.7865, lng: -79.9240,
-      budget_usd: 0,
-      start_date: "",
-      end_date: "",
-      links: ["https://placeholder/union-pier"],
-      description: "Street grid, utilities, waterfront access improvements."
-    },
-    {
-      id: "CHS-004",
-      name: "Ashley River Crossing (Bike/Ped Bridge)",
-      category: "transit",
-      status: "active",
-      city: "Charleston, SC",
-      lat: 32.7905, lng: -79.9585,
-      budget_usd: 0,
-      start_date: "",
-      end_date: "",
-      links: ["https://placeholder/ashley-river-crossing"],
-      description: "Dedicated multi‑use bridge connecting downtown and West Ashley."
-    },
-    {
-      id: "CHS-005",
-      name: "Charleston International Airport (CHS) — Terminal Expansion",
-      category: "building",
-      status: "active",
-      city: "North Charleston, SC",
-      lat: 32.8986, lng: -80.0405,
-      budget_usd: 0,
-      start_date: "",
-      end_date: "",
-      links: ["https://placeholder/chs-terminal-expansion"],
-      description: "Gate expansion, security, and curbside upgrades."
-    },
-    {
-      id: "CHS-006",
-      name: "West Ashley Greenway & Bikeway Upgrades",
-      category: "park",
-      status: "planned",
-      city: "Charleston, SC",
-      lat: 32.7830, lng: -80.0120,
-      budget_usd: 0,
-      start_date: "",
-      end_date: "",
-      links: ["https://placeholder/wag-upgrades"],
-      description: "Trail surface, lighting, crossings, and access improvements."
-    }
-  ]
-};
-
-// --- Map setup (center on Charleston) ---
-const map = L.map('map', { zoomControl: true }).setView([32.78, -79.94], 12);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
-}).addTo(map);
-
-// Marker layers keyed by project id for easy updates
-const layerGroup = L.layerGroup().addTo(map);
-const markerIndex = new Map();
-
-function markerColor(category) {
-  const colors = { transit: "blue", road: "red", park: "green", building: "purple", resilience: "orange" };
-  return colors[category] || "gray";
-}
-function makeDivIcon(color) {
-  const el = document.createElement('div');
-  el.style.width = '12px';
-  el.style.height = '12px';
-  el.style.borderRadius = '50%';
-  el.style.background = color;
-  el.style.border = '2px solid white';
-  el.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.2)';
-  return L.divIcon({ html: el, className: "dot", iconSize: [12,12] });
-}
-
-function projectPopup(p) {
-  const money = p.budget_usd ? `$${p.budget_usd.toLocaleString()}` : "—";
-  const links = (p.links||[]).map(h => `<a href="${h}" target="_blank" rel="noopener">link</a>`).join(" · ");
-  return `
-    <strong>${p.name}</strong><br/>
-    <span class="tag">${p.category}</span> <span class="tag">${p.status}</span><br/>
-    ${p.city}<br/>
-    Budget: ${money}<br/>
-    ${p.start_date || "?"} → ${p.end_date || "?"}<br/>
-    <small>${p.description || ""}</small><br/>
-    ${links}
-  `;
-}
-
-function addOrUpdateMarker(p) {
-  const existing = markerIndex.get(p.id);
-  if (existing) { existing.setLatLng([p.lat, p.lng]).setIcon(makeDivIcon(markerColor(p.category))).bindPopup(projectPopup(p)); return; }
-  const m = L.marker([p.lat, p.lng], { icon: makeDivIcon(markerColor(p.category)) })
-    .bindPopup(projectPopup(p));
-  m.addTo(layerGroup);
-  markerIndex.set(p.id, m);
-}
-
-function removeMarker(id) {
-  const m = markerIndex.get(id);
-  if (m) { layerGroup.removeLayer(m); markerIndex.delete(id); }
-}
-
-// --- Filtering & rendering ---
-const qEl = document.getElementById('q');
-const listEl = document.getElementById('list');
-const statusChecks = [...document.querySelectorAll('input[name="status"]')];
-const categoryChecks = [...document.querySelectorAll('input[name="category"]')];
-
-function getFilters() {
-  const status = statusChecks.filter(c=>c.checked).map(c=>c.value);
-  const category = categoryChecks.filter(c=>c.checked).map(c=>c.value);
-  const q = (qEl.value || "").toLowerCase().trim();
-  return { status, category, q };
-}
-
-function passes(p, f) {
-  const txt = `${p.name} ${p.city}`.toLowerCase();
-  const qOk = !f.q || txt.includes(f.q);
-  const sOk = f.status.includes(p.status);
-  const cOk = f.category.includes(p.category);
-  return qOk && sOk && cOk;
-}
-
-function render() {
-  const f = getFilters();
-  const keep = new Set();
-  DATA.projects.forEach(p => {
-    if (passes(p, f)) { addOrUpdateMarker(p); keep.add(p.id); }
-  });
-  [...markerIndex.keys()].forEach(id => { if (!keep.has(id)) removeMarker(id); });
-
-  const items = DATA.projects.filter(p => passes(p, f));
-  listEl.innerHTML = items.map(p => `
-    <div class="project-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <strong>${p.name}</strong>
-        <span class="tag">${p.category}</span>
-      </div>
-      <div><span class="tag">${p.status}</span> <span>${p.city}</span></div>
-      <div><small>${p.start_date || "?"} → ${p.end_date || "?"}</small></div>
-      <div><small>Budget: ${p.budget_usd ? '$'+p.budget_usd.toLocaleString() : '—'}</small></div>
-      <div style="margin-top:6px">${(p.links||[]).map(h=>`<a href="${h}" target="_blank" rel="noopener">source</a>`).join(" · ")}</div>
-      <button onclick="flyTo('${p.id}')" style="margin-top:8px;border:1px solid #ddd;border-radius:8px;padding:6px 10px;background:white;cursor:pointer;">Zoom to</button>
-    </div>
-  `).join("");
-
-  if (keep.size > 0) {
-    const group = L.featureGroup([...markerIndex.values()]);
-    map.fitBounds(group.getBounds().pad(0.2), { animate: false });
-  }
-}
-
-function flyTo(id) {
-  const m = markerIndex.get(id);
-  if (m) { map.flyTo(m.getLatLng(), 15, { duration: 0.6 }); m.openPopup(); }
-}
-
-[qEl, ...statusChecks, ...categoryChecks].forEach(el => el.addEventListener('input', render));
-
-render();
-</script>
+<!-- Custom JS -->
+<script src="script.js"></script>
 </body>
 </html>
