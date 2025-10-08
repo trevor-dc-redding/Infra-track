@@ -21,7 +21,12 @@
   <aside id="sidebar">
     <h2>InfraMap — Charleston, SC</h2>
 
-    <input id="q" class="search" placeholder="Search name/city…" />
+    <!-- City selector replaces the search box -->
+    <label for="citySelect" class="label">City</label>
+    <select id="citySelect" class="select">
+      <option value="Charleston, SC" selected>Charleston, SC</option>
+      <!-- Add more cities here later -->
+    </select>
 
     <div class="controls">
       <h4>Status</h4>
@@ -37,7 +42,7 @@
       <label><input type="checkbox" name="category" value="resilience" checked> Resilience</label>
     </div>
 
-    <div class="legend">Click markers for details. Filters update both the list and the map.</div>
+    <div class="legend">Choose a city and filter by status/category. Click markers for details.</div>
     <div id="list"></div>
   </aside>
 
@@ -55,3 +60,4 @@
 <script src="script.js"></script>
 </body>
 </html>
+
